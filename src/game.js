@@ -13,7 +13,7 @@ let glIndicesBuffer = gl.createBuffer(); {
 
 let vertices = gl.createBuffer(); {
 	gl.bindBuffer(gl.ARRAY_BUFFER, vertices);
-	const positions = new Float32Array([-0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, -0.5]);
+	const positions = new Float32Array([-1, -1, -1, 1, 1, 1, 1, -1]);
 	gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
 }
 
@@ -29,7 +29,7 @@ function buildShaderProgram(vs, fs) {
 	gl.linkProgram(shaderProgram);
 
 	if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS))
-		alert(`GPU program error: ${gl.getProgramInfoLog(shaderProgram)}`);
+		alert(`Shader error: ${gl.getProgramInfoLog(shaderProgram)}`);
 	return shaderProgram;
 }
 
@@ -37,21 +37,17 @@ function loadShader(name, type, source) {
 	const shader = gl.createShader(type);
 	gl.shaderSource(shader, source);
 	gl.compileShader(shader);
+	// TODO: do I need it?
 	if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS))
 		alert(`${name} shader error: ${gl.getShaderInfoLog(shader)}`);
 	return shader;
 }
 
-
-function onResize() {
-	canvas.width = canvas.clientWidth * window.devicePixelRatio;
-	canvas.height = canvas.clientHeight * window.devicePixelRatio;
-}
-
-
 let x = 1;
 let last_t = 0;
 function onFrame(t) {
+	canvas.width = canvas.clientWidth * window.devicePixelRatio;
+	canvas.height = canvas.clientHeight * window.devicePixelRatio;
 	let dt = (t - last_t) / 1000;
 	x += 1 * dt;
 
@@ -68,11 +64,11 @@ function onFrame(t) {
 	gl.vertexAttribPointer(0, 2, gl.FLOAT, 0, 0, 0);
 	gl.enableVertexAttribArray(0);
 	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, glIndicesBuffer);
+	gl.uniform2f(gl.getUniformLocation(shader, "scale"), 640 / canvas.clientWidth, 640 / canvas.clientHeight);
 	gl.drawElements(gl.TRIANGLE_STRIP, 6, gl.UNSIGNED_SHORT, 0);
 
 	window.requestAnimationFrame(onFrame);
 	last_t = t;
 }
 
-document.addEventListener("resize", onResize);
 window.requestAnimationFrame(onFrame);
