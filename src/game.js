@@ -6,14 +6,16 @@ canvas.style = "position: absolute; width: 100%; height: 100%; inset: 0px;";
 let gl = canvas.getContext("webgl2");
 document.body.appendChild(canvas);
 let shader = buildShaderProgram(QUADS_VS, QUADS_FS);
-let vertices = gl.createBuffer();
-{
+let glIndicesBuffer = gl.createBuffer(); {
+	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, glIndicesBuffer);
+	gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array([0, 1, 2, 0, 2, 3]), gl.STATIC_DRAW);
+};
+
+let vertices = gl.createBuffer(); {
 	gl.bindBuffer(gl.ARRAY_BUFFER, vertices);
-	const positions = new Float32Array([0.5, 0.0, -0.5, 0.0, 0.0, 0.5, 0.5, -0.5]);
+	const positions = new Float32Array([-0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, -0.5]);
 	gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
 }
-
-
 
 function buildShaderProgram(vs, fs) {
 	let vshader = loadShader("Vertex", gl.VERTEX_SHADER, vs);
@@ -55,7 +57,7 @@ function onFrame(t) {
 
 	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 	gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-	gl.disable(gl.CULL_FACE);
+	gl.enable(gl.CULL_FACE);
 	gl.enable(gl.DEPTH_TEST);
 	gl.clearDepth(1.0);
 	gl.clearColor(0.0, 0.0, 0.0, 1.0);
@@ -65,7 +67,8 @@ function onFrame(t) {
 	gl.bindBuffer(gl.ARRAY_BUFFER, (vertices));
 	gl.vertexAttribPointer(0, 2, gl.FLOAT, 0, 0, 0);
 	gl.enableVertexAttribArray(0);
-	gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, glIndicesBuffer);
+	gl.drawElements(gl.TRIANGLE_STRIP, 6, gl.UNSIGNED_SHORT, 0);
 
 	window.requestAnimationFrame(onFrame);
 	last_t = t;
