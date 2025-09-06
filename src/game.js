@@ -1,6 +1,6 @@
 const QUADS_VS = await(await fetch("./quads.vs.glsl", { cache: "no-store" })).text();
 const QUADS_FS = await(await fetch("./quads.fs.glsl", { cache: "no-store" })).text();
-const MAX_BUFFER_SIZE = 8;
+const MAX_BUFFER_SIZE = 8192;
 
 let canvas = document.createElement("canvas");
 canvas.style = "position: absolute; width: 100%; height: 100%; inset: 0px;";
@@ -8,8 +8,11 @@ let gl = canvas.getContext("webgl2");
 document.body.appendChild(canvas);
 let shader = buildShaderProgram(QUADS_VS, QUADS_FS);
 let glIndicesBuffer = gl.createBuffer(); {
+	let indices = [];
+	for (let i = 0; i * 2 < MAX_BUFFER_SIZE; i += 4)
+		indices.push(...[i, i + 1, i + 2, i, i + 2, i + 3]);
 	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, glIndicesBuffer);
-	gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array([0, 1, 2, 0, 2, 3]), gl.STATIC_DRAW);
+	gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
 };
 
 let vertices = new Float32Array(MAX_BUFFER_SIZE);
