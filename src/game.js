@@ -18,7 +18,6 @@ let glIndicesBuffer = gl.createBuffer(); {
 var texture = gl.createTexture();
 gl.activeTexture(gl.TEXTURE0);
 gl.bindTexture(gl.TEXTURE_2D, texture);
-gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 // gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array());
 gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 4, 4, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([
 	0, 0, 255, 255, 255, 255, 255, 255,
@@ -34,9 +33,16 @@ gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
 // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.MIRRORED_REPEAT);
 // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.MIRRORED_REPEAT);
+var image = new Image();
+image.onload = function () {
+	gl.bindTexture(gl.TEXTURE_2D, texture);
+	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+}
+image.src = "./atlas.png";
 
 let sprites = {
-	"face": { x: 0, y: 0, }
+	"face": { x: 0, y: 0, b: 128, r: 128 }
 };
 
 let vertices = new Float32Array(MAX_BUFFER_SIZE);
@@ -139,6 +145,7 @@ function onFrame(t) {
 	drawQuad(Math.sin(t), Math.cos(t), 3, 1, 1);
 	drawQuad(Math.sin(t), Math.cos(t), 2, 1, 1);
 	drawQuad(Math.sin(t), Math.cos(t), 1, 1, 1);
+	drawQuad(2, 0, 1, 1, 1);
 	drawBatch();
 
 	window.requestAnimationFrame(onFrame);
