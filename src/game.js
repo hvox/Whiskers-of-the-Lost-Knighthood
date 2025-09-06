@@ -1,6 +1,6 @@
 const QUADS_VS = await(await fetch("./quads.vs.glsl", { cache: "no-store" })).text();
 const QUADS_FS = await(await fetch("./quads.fs.glsl", { cache: "no-store" })).text();
-const MAX_BUFFER_SIZE = 8;
+const MAX_BUFFER_SIZE = 12;
 
 let canvas = document.createElement("canvas");
 canvas.style = "position: absolute; width: 100%; height: 100%; inset: 0px;";
@@ -12,11 +12,8 @@ let glIndicesBuffer = gl.createBuffer(); {
 	gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array([0, 1, 2, 0, 2, 3]), gl.STATIC_DRAW);
 };
 
-let vertices = new Float32Array([-1, -1, -1, 1, 1, 1, 1, -1]);
-let verticesBuffer = gl.createBuffer(); {
-	gl.bindBuffer(gl.ARRAY_BUFFER, verticesBuffer);
-	gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STREAM_DRAW);
-}
+let vertices = new Float32Array(MAX_BUFFER_SIZE);
+let verticesBuffer = gl.createBuffer();
 
 function buildShaderProgram(vs, fs) {
 	let vshader = loadShader("Vertex", gl.VERTEX_SHADER, vs);
@@ -62,7 +59,11 @@ function onFrame(t) {
 
 	t /= 1000;
 	drawQuad(Math.sin(t), Math.cos(t), 1, 1, 1);
-	drawQuad(-Math.sin(t), -Math.cos(t), 2, 1, 1);
+	drawQuad(Math.sin(t), Math.cos(t), 2, 1, 1);
+	drawQuad(Math.sin(t), Math.cos(t), 3, 1, 1);
+	drawQuad(Math.sin(t), Math.cos(t), 4, 1, 1);
+	drawQuad(Math.sin(t), Math.cos(t), 5, 1, 1);
+	drawQuad(Math.sin(t), Math.cos(t), 6, 1, 1);
 	drawBatch();
 
 	window.requestAnimationFrame(onFrame);
@@ -76,12 +77,16 @@ function drawQuad(x, y, z, w, h) {
 	let dy = h * z / 2;
 	vertices[bufferSize++] = x - dx;
 	vertices[bufferSize++] = y - dy;
+	vertices[bufferSize++] = z;
 	vertices[bufferSize++] = x - dx;
 	vertices[bufferSize++] = y + dy;
+	vertices[bufferSize++] = z;
 	vertices[bufferSize++] = x + dx;
 	vertices[bufferSize++] = y + dy;
+	vertices[bufferSize++] = z;
 	vertices[bufferSize++] = x + dx;
 	vertices[bufferSize++] = y - dy;
+	vertices[bufferSize++] = z;
 }
 
 function drawBatch() {
@@ -89,11 +94,11 @@ function drawBatch() {
 	gl.useProgram(shader);
 	gl.bindBuffer(gl.ARRAY_BUFFER, verticesBuffer);
 	gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STREAM_DRAW);
-	gl.vertexAttribPointer(0, 2, gl.FLOAT, 0, 0, 0);
+	gl.vertexAttribPointer(0, 3, gl.FLOAT, 0, 0, 0);
 	gl.enableVertexAttribArray(0);
 	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, glIndicesBuffer);
 	gl.uniform2f(gl.getUniformLocation(shader, "scale"), 320 / canvas.clientWidth, 320 / canvas.clientHeight);
-	gl.drawElements(gl.TRIANGLE_STRIP, bufferSize * 3 >> 2, gl.UNSIGNED_SHORT, 0);
+	gl.drawElements(gl.TRIANGLE_STRIP, bufferSize >> 1, gl.UNSIGNED_SHORT, 0);
 	bufferSize = 0;
 }
 
