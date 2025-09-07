@@ -3,7 +3,8 @@ const QUADS_FS = await(await fetch("./quads.fs.glsl", { cache: "no-store" })).te
 const MAX_BUFFER_SIZE = 8192;
 
 let canvas = document.createElement("canvas");
-canvas.style = "position: absolute; width: 100%; height: 100%; inset: 0px;";
+canvas.style = "position: absolute; width: 100%; height: 100%; inset: 0px; image-rendering: pixelated;";
+// canvas.style = "position: absolute; width: 100%; height: 100%; inset: 0px;";
 let gl = canvas.getContext("webgl2");
 document.body.appendChild(canvas);
 let shader = buildShaderProgram(QUADS_VS, QUADS_FS);
@@ -18,7 +19,6 @@ let glIndicesBuffer = gl.createBuffer(); {
 var texture = gl.createTexture();
 gl.activeTexture(gl.TEXTURE0);
 gl.bindTexture(gl.TEXTURE_2D, texture);
-// gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array());
 let textureResolution = { w: 4, h: 4 };
 gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 4, 4, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([
 	0, 0, 255, 255, 255, 255, 255, 255,
@@ -44,8 +44,8 @@ image.onload = function () {
 image.src = "./atlas.png";
 
 let sprites = {
-	"big": { x: 18, y: 17, b: 80, r: 76 },
-	"face": { x: 0, y: 18, b: 45, r: 22 },
+	"big": { x: 18, y: 17, b: 80, r: 77 },
+	"face": { x: 0, y: 18, b: 46, r: 22 },
 	"mini": { x: 0, y: 0, b: 16, r: 16 }
 };
 
@@ -123,18 +123,34 @@ function drawBatch() {
 	gl.vertexAttribPointer(1, 2, gl.FLOAT, 0, 0, 0);
 	gl.enableVertexAttribArray(1);
 	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, glIndicesBuffer);
-	gl.uniform2f(gl.getUniformLocation(shader, "scale"), 16 / canvas.clientWidth, 16 / canvas.clientHeight);
+	gl.uniform4f(gl.getUniformLocation(shader, "transform"),
+		(canvas.width & 1) / canvas.width, (canvas.height & 1) / canvas.height,
+		16 / canvas.width, 16 / canvas.height);
 	gl.drawElements(gl.TRIANGLES, bufferSize * 3 >> 2, gl.UNSIGNED_SHORT, 0);
 	bufferSize = 0;
 }
 
-let x = 1;
+let fps = 0;
+let frame = 0;
+let fpsT = 0;
+function trackFps(t) {
+	frame += 1;
+	if (t - fpsT > 1000) {
+		fps = 1000 * frame / (t - fpsT);
+		frame = 0;
+		fpsT = t;
+	}
+}
+
 let last_t = 0;
 function onFrame(t) {
+	trackFps(t);
 	canvas.width = canvas.clientWidth * window.devicePixelRatio / 1;
 	canvas.height = canvas.clientHeight * window.devicePixelRatio / 1;
+	let debug_info = canvas.width + "x" + canvas.height;
 	let dt = (t - last_t) / 1000;
-	x += 1 * dt;
+	debug_info += "\nFPS=" + fps.toFixed(2);
+	last_t = t;
 
 	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 	gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
@@ -160,7 +176,7 @@ function onFrame(t) {
 	drawBatch();
 
 	window.requestAnimationFrame(onFrame);
-	last_t = t;
+	document.getElementById("debug").innerText = debug_info;
 }
 
 function onKeydown(key) {
