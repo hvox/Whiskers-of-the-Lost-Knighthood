@@ -19,6 +19,7 @@ var texture = gl.createTexture();
 gl.activeTexture(gl.TEXTURE0);
 gl.bindTexture(gl.TEXTURE_2D, texture);
 // gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array());
+let textureResolution = { w: 4, h: 4 };
 gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 4, 4, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([
 	0, 0, 255, 255, 255, 255, 255, 255,
 	255, 0, 255, 255, 255, 128, 0, 255,
@@ -38,11 +39,14 @@ image.onload = function () {
 	gl.bindTexture(gl.TEXTURE_2D, texture);
 	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+	textureResolution = { w: image.naturalWidth, h: image.naturalHeight };
 }
 image.src = "./atlas.png";
 
 let sprites = {
-	"face": { x: 0, y: 0, b: 128, r: 128 }
+	"big": { x: 18, y: 17, b: 80, r: 76 },
+	"face": { x: 0, y: 18, b: 45, r: 22 },
+	"mini": { x: 0, y: 0, b: 16, r: 16 }
 };
 
 let vertices = new Float32Array(MAX_BUFFER_SIZE);
@@ -78,20 +82,25 @@ function loadShader(name, type, source) {
 }
 
 let bufferSize = 0;
-function drawQuad(x, y, z, w, h) {
+function drawQuad(x, y, z, sprite) {
 	if (bufferSize == MAX_BUFFER_SIZE) drawBatch();
+	let uv = sprites[sprite] ?? { x: 0, y: 0, r: 16, b: 16 };
+	let u0 = uv.x / textureResolution.w;
+	let u1 = uv.r / textureResolution.w;
+	let v0 = uv.y / textureResolution.h;
+	let v1 = uv.b / textureResolution.h;
+	uvs[bufferSize + 0] = u0;
+	uvs[bufferSize + 1] = v0;
+	uvs[bufferSize + 2] = u0;
+	uvs[bufferSize + 3] = v1;
+	uvs[bufferSize + 4] = u1;
+	uvs[bufferSize + 5] = v1;
+	uvs[bufferSize + 6] = u1;
+	uvs[bufferSize + 7] = v0;
 	x = (x - camera.x) / z;
 	y = (y - camera.y) / z;
-	let dx = w / 2;
-	let dy = h / 2;
-	uvs[bufferSize + 0] = 0.0;
-	uvs[bufferSize + 1] = 0.0;
-	uvs[bufferSize + 2] = 0.0;
-	uvs[bufferSize + 3] = 1.0;
-	uvs[bufferSize + 4] = 1.0;
-	uvs[bufferSize + 5] = 1.0;
-	uvs[bufferSize + 6] = 1.0;
-	uvs[bufferSize + 7] = 0.0;
+	let dx = (uv.r - uv.x) / 2;
+	let dy = (uv.b - uv.y) / 2;
 	vertices[bufferSize++] = x - dx;
 	vertices[bufferSize++] = y - dy;
 	vertices[bufferSize++] = x - dx;
@@ -114,7 +123,7 @@ function drawBatch() {
 	gl.vertexAttribPointer(1, 2, gl.FLOAT, 0, 0, 0);
 	gl.enableVertexAttribArray(1);
 	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, glIndicesBuffer);
-	gl.uniform2f(gl.getUniformLocation(shader, "scale"), 320 / canvas.clientWidth, 320 / canvas.clientHeight);
+	gl.uniform2f(gl.getUniformLocation(shader, "scale"), 8 / canvas.clientWidth, 8 / canvas.clientHeight);
 	gl.drawElements(gl.TRIANGLES, bufferSize * 3 >> 2, gl.UNSIGNED_SHORT, 0);
 	bufferSize = 0;
 }
@@ -139,13 +148,14 @@ function onFrame(t) {
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
 	t /= 1000;
-	drawQuad(Math.sin(t), Math.cos(t), 6, 1, 1);
-	drawQuad(Math.sin(t), Math.cos(t), 5, 1, 1);
-	drawQuad(Math.sin(t), Math.cos(t), 4, 1, 1);
-	drawQuad(Math.sin(t), Math.cos(t), 3, 1, 1);
-	drawQuad(Math.sin(t), Math.cos(t), 2, 1, 1);
-	drawQuad(Math.sin(t), Math.cos(t), 1, 1, 1);
-	drawQuad(2, 0, 1, 1, 1);
+	drawQuad(16 * Math.sin(t) - 16, 16 * Math.cos(t), 6, "big");
+	drawQuad(16 * Math.sin(t) - 16, 16 * Math.cos(t), 5, "face");
+	drawQuad(16 * Math.sin(t) - 16, 16 * Math.cos(t), 4, "face");
+	drawQuad(16 * Math.sin(t) - 16, 16 * Math.cos(t), 3, "face");
+	drawQuad(16 * Math.sin(t) - 16, 16 * Math.cos(t), 2, "face");
+	drawQuad(16 * Math.sin(t) - 16, 16 * Math.cos(t), 1, "face");
+	drawQuad(16, 0, 1, "mini");
+	drawQuad(48, 0, 1, "OEARWOHREA02R");
 	drawBatch();
 
 	window.requestAnimationFrame(onFrame);
