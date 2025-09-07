@@ -30,7 +30,7 @@ gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 4, 4, 0, gl.RGBA, gl.UNSIGNED_BYTE, new
 	0, 255, 0, 255, 255, 255, 255, 255,
 	255, 0, 255, 255, 255, 255, 0, 255,
 ]));
-gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
 // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.MIRRORED_REPEAT);
 // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.MIRRORED_REPEAT);
@@ -123,7 +123,7 @@ function drawBatch() {
 	gl.vertexAttribPointer(1, 2, gl.FLOAT, 0, 0, 0);
 	gl.enableVertexAttribArray(1);
 	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, glIndicesBuffer);
-	gl.uniform2f(gl.getUniformLocation(shader, "scale"), 8 / canvas.clientWidth, 8 / canvas.clientHeight);
+	gl.uniform2f(gl.getUniformLocation(shader, "scale"), 16 / canvas.clientWidth, 16 / canvas.clientHeight);
 	gl.drawElements(gl.TRIANGLES, bufferSize * 3 >> 2, gl.UNSIGNED_SHORT, 0);
 	bufferSize = 0;
 }
@@ -154,8 +154,9 @@ function onFrame(t) {
 	drawQuad(16 * Math.sin(t) - 16, 16 * Math.cos(t), 3, "face");
 	drawQuad(16 * Math.sin(t) - 16, 16 * Math.cos(t), 2, "face");
 	drawQuad(16 * Math.sin(t) - 16, 16 * Math.cos(t), 1, "face");
-	drawQuad(16, 0, 1, "mini");
+	drawQuad(8, 48, 1, "mini");
 	drawQuad(48, 0, 1, "OEARWOHREA02R");
+	drawQuad(-8, 48, 1, "mini");
 	drawBatch();
 
 	window.requestAnimationFrame(onFrame);
