@@ -1,5 +1,7 @@
 const QUADS_VS = await(await fetch("./quads.vs.glsl", { cache: "no-store" })).text();
 const QUADS_FS = await(await fetch("./quads.fs.glsl", { cache: "no-store" })).text();
+const FOG_VS = await(await fetch("./fog.vs.glsl", { cache: "no-store" })).text();
+const FOG_FS = await(await fetch("./fog.fs.glsl", { cache: "no-store" })).text();
 const MAX_BUFFER_SIZE = 8192;
 
 let canvas = document.createElement("canvas");
@@ -8,6 +10,7 @@ canvas.style = "position: absolute; width: 100%; height: 100%; inset: 0px; image
 let gl = canvas.getContext("webgl2");
 document.body.appendChild(canvas);
 let shader = buildShaderProgram(QUADS_VS, QUADS_FS);
+let fogShader = buildShaderProgram(FOG_VS, FOG_FS);
 let glIndicesBuffer = gl.createBuffer(); {
 	let indices = [];
 	for (let i = 0; i * 2 < MAX_BUFFER_SIZE; i += 4)
@@ -174,6 +177,22 @@ function onFrame(t) {
 	drawQuad(48, 0, 1, "OEARWOHREA02R");
 	drawQuad(-8, 48, 1, "mini");
 	drawBatch();
+
+	gl.useProgram(fogShader);
+	gl.bindBuffer(gl.ARRAY_BUFFER, verticesBuffer);
+	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, -1.0]), gl.STREAM_DRAW);
+	gl.vertexAttribPointer(0, 2, gl.FLOAT, 0, 0, 0);
+	gl.enableVertexAttribArray(0);
+	gl.bindBuffer(gl.ARRAY_BUFFER, uvBuffer);
+	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 0.0]), gl.STREAM_DRAW);
+	gl.vertexAttribPointer(1, 2, gl.FLOAT, 0, 0, 0);
+	gl.enableVertexAttribArray(1);
+	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, glIndicesBuffer);
+	gl.uniform4f(gl.getUniformLocation(fogShader, "transform"),
+		(canvas.width & 1) / canvas.width, (canvas.height & 1) / canvas.height,
+		16 / canvas.width, 16 / canvas.height);
+	gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
+
 
 	window.requestAnimationFrame(onFrame);
 	document.getElementById("debug").innerText = debug_info;
