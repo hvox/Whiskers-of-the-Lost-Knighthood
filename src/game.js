@@ -7,7 +7,7 @@ const MAX_BUFFER_SIZE = 8192;
 let canvas = document.createElement("canvas");
 canvas.style = "position: absolute; width: 100%; height: 100%; inset: 0px; image-rendering: pixelated;";
 // canvas.style = "position: absolute; width: 100%; height: 100%; inset: 0px;";
-let gl = canvas.getContext("webgl2");
+let gl = canvas.getContext("webgl2", { alpha: false });
 document.body.appendChild(canvas);
 let shader = buildShaderProgram(QUADS_VS, QUADS_FS);
 let fogShader = buildShaderProgram(FOG_VS, FOG_FS);
@@ -46,18 +46,23 @@ image.onload = function () {
 	textureResolution = { w: image.naturalWidth, h: image.naturalHeight };
 }
 image.src = "./atlas.png";
-
+let vertices = new Float32Array(MAX_BUFFER_SIZE);
+let verticesBuffer = gl.createBuffer();
+let uvs = new Float32Array(MAX_BUFFER_SIZE);
+let uvBuffer = gl.createBuffer();
+let camera = { x: 0, y: 8 };
+let knight = { x: 0, y: 0, d: 1, dx: 0, dy: 0, state: "idle", t: 0 };
 let sprites = {
-	"knight/i0": { x: 0, y: 0, w: 32, h: 32 },
-	"knight/i1": { x: 32, y: 0, w: 32, h: 32 },
-	"knight/i2": { x: 64, y: 0, w: 32, h: 32 },
-	"knight/r1": { x: 96, y: 0, w: 32, h: 32 },
-	"knight/r2": { x: 128, y: 0, w: 32, h: 32 },
-	"knight/r3": { x: 160, y: 0, w: 32, h: 32 },
-	"knight/a1": { x: 192, y: 0, w: 32, h: 32 },
-	"knight/a2": { x: 224, y: 0, w: 32, h: 32 },
-	"knight/d1": { x: 256, y: 0, w: 32, h: 32 },
-	"knight/d2": { x: 288, y: 0, w: 32, h: 32 },
+	"knight/idle0": { x: 0, y: 0, w: 32, h: 32 },
+	"knight/idle1": { x: 32, y: 0, w: 32, h: 32 },
+	"knight/idle2": { x: 64, y: 0, w: 32, h: 32 },
+	"knight/run1": { x: 96, y: 0, w: 32, h: 32 },
+	"knight/run2": { x: 128, y: 0, w: 32, h: 32 },
+	"knight/run3": { x: 160, y: 0, w: 32, h: 32 },
+	"knight/atack1": { x: 192, y: 0, w: 32, h: 32 },
+	"knight/atack2": { x: 224, y: 0, w: 32, h: 32 },
+	"knight/death1": { x: 256, y: 0, w: 32, h: 32 },
+	"knight/death2": { x: 288, y: 0, w: 32, h: 32 },
 
 	"cat/i1": { x: 0, y: 32, w: 32, h: 32 },
 	"cat/i2": { x: 32, y: 32, w: 32, h: 32 },
@@ -101,11 +106,6 @@ let sprites = {
 	"wall": { x: 224, y: 96, w: 96, h: 32 },
 };
 
-let vertices = new Float32Array(MAX_BUFFER_SIZE);
-let verticesBuffer = gl.createBuffer();
-let uvs = new Float32Array(MAX_BUFFER_SIZE);
-let uvBuffer = gl.createBuffer();
-let camera = { x: 1, y: 0 };
 
 function buildShaderProgram(vs, fs) {
 	let vshader = loadShader("Vertex", gl.VERTEX_SHADER, vs);
@@ -205,14 +205,41 @@ function trackFps(t) {
 }
 
 let last_t = 0;
+// let skipFrame = 0;
 function onFrame(t) {
+	// skipFrame += 1; if (skipFrame % 2) { requestAnimationFrame(onFrame); return; };
 	trackFps(t);
 	canvas.width = canvas.clientWidth * window.devicePixelRatio / 1;
 	canvas.height = canvas.clientHeight * window.devicePixelRatio / 1;
 	let debug_info = canvas.width + "x" + canvas.height;
 	let dt = (t - last_t) / 1000;
 	debug_info += "\nFPS=" + fps.toFixed(2);
+	updateKeyStates(dt);
 	last_t = t;
+
+	let runDir = (keys["KeyD"] > 0) - (keys["KeyA"] > 0);
+	let knightState = runDir != 0 ? "run" : "idle";
+	knight.x += runDir * 50 * dt;
+	knight.d = runDir || knight.d;
+	if (knight.state == knightState) {
+		knight.t += dt;
+	} else {
+		knight.state = knightState;
+		knight.t = 0;
+	}
+	let alpha = 3.0 * dt;
+	// let cameraTarget = Math.round(knight.x + knight.d * 16);
+	let cameraTarget = knight.x + knight.d * 16;
+	camera.x = (1 - alpha) * camera.x + alpha * cameraTarget;
+	if (Math.abs(camera.x - cameraTarget) < 0.1)
+		camera.x = cameraTarget;
+	switch (knightState) {
+		case "idle":
+			knight.x = Math.round(knight.x + knight.d * 0.4);
+			knightState += 1 + Math.round(knight.t / 0.35) % 2;
+			break;
+		case "run": knightState += 1 + Math.abs(Math.round(knight.t / 0.15) % 4 - 2); break;
+	}
 
 	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 	gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
@@ -222,24 +249,14 @@ function onFrame(t) {
 	gl.depthFunc(gl.LEQUAL);
 	gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 	gl.clearDepth(1.0);
-	gl.clearColor(0.0, 0.0, 0.0, 1.0);
+	gl.clearColor(0.0, 0.0, 0.0, 1);
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
 	t /= 1000;
-	draw2d(-96, -16, 1, "floor");
-	draw2d(-48, -16, 1, "floor");
-	draw2d(0, -16, 1, "floor");
-	draw2d(48, -16, 1, "floor");
-	draw2d(96, -16, 1, "floor");
-	draw2d(16 * Math.sin(t) - 16, 16 * Math.cos(t), 6, "knight/i1");
-	draw2d(16 * Math.sin(t) + 16, 16 * Math.cos(t), 1, "face");
-	draw2d(16 * Math.sin(t) - 16, 16 * Math.cos(t), 4, "face");
-	draw2d(16 * Math.sin(t) - 64, 16 * Math.cos(t), 3, "face");
-	draw2d(16 * Math.sin(t) - 16, 16 * Math.cos(t), -1, "face");
-	draw2d(16 * Math.sin(t) - 16, 16 * Math.cos(t), 1, "face");
-	draw2d(8, 48, 1, "mini");
-	draw2d(48, 0, 1, "OEARWOHREA02R");
-	draw2d(-8, 48, 1, "mini");
+	let x0 = Math.round(camera.x / 48) * 48;
+	for (let x = x0 - 128; x <= x0 + 176; x += 48)
+		draw2d(x, -26, 1, "floor");
+	draw2d(knight.x, knight.y, knight.d, "knight/" + knightState);
 	drawBatch();
 
 	gl.useProgram(fogShader);
@@ -262,13 +279,28 @@ function onFrame(t) {
 	document.getElementById("debug").innerText = debug_info;
 }
 
+let keys = {}
+
+function updateKeyStates(dt = 0) {
+	for (const [key, t] of Object.entries(keys)) {
+		if (t - dt <= 0) delete keys[key];
+		else keys[key] -= dt;
+	}
+}
+
 function onKeydown(key) {
 	if (key.key == "ArrowLeft") {
 		camera.x -= 0.5;
 	} else if (key.key == "ArrowRight") {
 		camera.x += 0.5;
 	}
+	keys[key.code] = 1;
+}
+
+function onKeyup(key) {
+	delete keys[key.code];
 }
 
 document.addEventListener("keydown", onKeydown);
+document.addEventListener("keyup", onKeyup);
 window.requestAnimationFrame(onFrame);

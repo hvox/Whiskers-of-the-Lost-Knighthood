@@ -3,8 +3,8 @@ precision mediump float;
 precision mediump int;
 
 uniform sampler2D image;
-// centroid in vec2 tex;
-in vec2 tex;
+centroid in vec2 tex;
+// in vec2 tex;
 in vec4 tone;
 out vec4 color;
 
