@@ -11,6 +11,7 @@ let gl = canvas.getContext("webgl2");
 document.body.appendChild(canvas);
 let shader = buildShaderProgram(QUADS_VS, QUADS_FS);
 let fogShader = buildShaderProgram(FOG_VS, FOG_FS);
+let batchColor = 0xffffffff;
 let glIndicesBuffer = gl.createBuffer(); {
 	let indices = [];
 	for (let i = 0; i * 2 < MAX_BUFFER_SIZE; i += 4)
@@ -85,13 +86,17 @@ function loadShader(name, type, source) {
 }
 
 let bufferSize = 0;
-function drawQuad(x, y, z, sprite) {
-	if (bufferSize == MAX_BUFFER_SIZE) drawBatch();
-	let uv = sprites[sprite] ?? { x: 0, y: 0, r: 16, b: 16 };
+function draw2d(x, y, direction, sprite, color = 0xffffffff) {
+	if (bufferSize == MAX_BUFFER_SIZE || color != batchColor) {
+		drawBatch();
+		batchColor = color;
+	}
+	let uv = sprites[sprite] ?? { x: 0, y: 0, w: 64, h: 64 };
 	let u0 = uv.x / textureResolution.w;
-	let u1 = uv.r / textureResolution.w;
-	let v0 = uv.y / textureResolution.h;
-	let v1 = uv.b / textureResolution.h;
+	let u1 = u0 + uv.w / textureResolution.w;
+	let v1 = 1 - uv.y / textureResolution.h;
+	let v0 = v1 - uv.h / textureResolution.h;
+	if (direction != 1) [u0, u1] = [u1, u0];
 	uvs[bufferSize + 0] = u0;
 	uvs[bufferSize + 1] = v0;
 	uvs[bufferSize + 2] = u0;
@@ -100,10 +105,10 @@ function drawQuad(x, y, z, sprite) {
 	uvs[bufferSize + 5] = v1;
 	uvs[bufferSize + 6] = u1;
 	uvs[bufferSize + 7] = v0;
-	x = (x - camera.x) / z;
-	y = (y - camera.y) / z;
-	let dx = (uv.r - uv.x) / 2;
-	let dy = (uv.b - uv.y) / 2;
+	x -= camera.x;
+	y -= camera.y;
+	let dx = uv.w / 2;
+	let dy = uv.h / 2;
 	vertices[bufferSize++] = x - dx;
 	vertices[bufferSize++] = y - dy;
 	vertices[bufferSize++] = x - dx;
@@ -129,6 +134,12 @@ function drawBatch() {
 	gl.uniform4f(gl.getUniformLocation(shader, "transform"),
 		(canvas.width & 1) / canvas.width, (canvas.height & 1) / canvas.height,
 		16 / canvas.width, 16 / canvas.height);
+	gl.uniform4f(gl.getUniformLocation(shader, "color"),
+		Math.trunc(batchColor / 0x01000000) / 0xff,
+		(batchColor & 0x00ff0000) / 0x00ff0000,
+		(batchColor & 0x0000ff00) / 0x0000ff00,
+		(batchColor & 0x000000ff) / 0x000000ff,
+	);
 	gl.drawElements(gl.TRIANGLES, bufferSize * 3 >> 2, gl.UNSIGNED_SHORT, 0);
 	bufferSize = 0;
 }
@@ -167,15 +178,20 @@ function onFrame(t) {
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
 	t /= 1000;
-	drawQuad(16 * Math.sin(t) - 16, 16 * Math.cos(t), 6, "big");
-	drawQuad(16 * Math.sin(t) - 16, 16 * Math.cos(t), 5, "face");
-	drawQuad(16 * Math.sin(t) - 16, 16 * Math.cos(t), 4, "face");
-	drawQuad(16 * Math.sin(t) - 16, 16 * Math.cos(t), 3, "face");
-	drawQuad(16 * Math.sin(t) - 16, 16 * Math.cos(t), 2, "face");
-	drawQuad(16 * Math.sin(t) - 16, 16 * Math.cos(t), 1, "face");
-	drawQuad(8, 48, 1, "mini");
-	drawQuad(48, 0, 1, "OEARWOHREA02R");
-	drawQuad(-8, 48, 1, "mini");
+	draw2d(-96, -16, 1, "floor");
+	draw2d(-48, -16, 1, "floor");
+	draw2d(0, -16, 1, "floor");
+	draw2d(48, -16, 1, "floor");
+	draw2d(96, -16, 1, "floor");
+	draw2d(16 * Math.sin(t) - 16, 16 * Math.cos(t), 6, "knight/i1");
+	draw2d(16 * Math.sin(t) + 16, 16 * Math.cos(t), 1, "face");
+	draw2d(16 * Math.sin(t) - 16, 16 * Math.cos(t), 4, "face");
+	draw2d(16 * Math.sin(t) - 64, 16 * Math.cos(t), 3, "face");
+	draw2d(16 * Math.sin(t) - 16, 16 * Math.cos(t), -1, "face");
+	draw2d(16 * Math.sin(t) - 16, 16 * Math.cos(t), 1, "face");
+	draw2d(8, 48, 1, "mini");
+	draw2d(48, 0, 1, "OEARWOHREA02R");
+	draw2d(-8, 48, 1, "mini");
 	drawBatch();
 
 	gl.useProgram(fogShader);

@@ -5,6 +5,7 @@ precision mediump int;
 uniform sampler2D image;
 // centroid in vec2 tex;
 in vec2 tex;
+in vec4 tone;
 out vec4 color;
 
 void main() {
@@ -12,5 +13,5 @@ void main() {
     vec2 pixel = tex * texture_size;
     vec2 seam = floor(pixel + 0.5);
     pixel = seam + clamp((pixel - seam) / fwidth(pixel), -0.5, 0.5);
-    color = texture(image, pixel / texture_size);
+    color = texture(image, pixel / texture_size) * tone;
 }
