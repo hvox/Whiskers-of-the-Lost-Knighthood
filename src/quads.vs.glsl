@@ -15,7 +15,7 @@ void main() {
     tone = color;
     inner_position = vec2(
             2.0 * float(gl_VertexID / 2 % 2) - 1.0,
-            2.0 * float((gl_VertexID + 1) % 4 < 2) - 1.0
+            1.0 - 2.0 * float((gl_VertexID + 1) % 4 < 2)
         );
     tex = uv;
     min_tex = max_tex = uv;

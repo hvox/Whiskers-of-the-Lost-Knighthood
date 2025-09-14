@@ -147,6 +147,13 @@ function draw2d(x, y, direction, sprite, color = 0xffffffff) {
 	let u1 = u0 + uv.w / textureResolution.w;
 	let v1 = 1 - uv.y / textureResolution.h;
 	let v0 = v1 - uv.h / textureResolution.h;
+	// TODO: consider pixel size instead of hardcoding 1/8
+	// let uPadding = 1 / textureResolution.w / 8;
+	// let vPadding = 1 / textureResolution.h / 8;
+	// u0 += uPadding;
+	// u1 -= uPadding;
+	// v0 += vPadding;
+	// v1 -= vPadding;
 	uvs[bufferSize + 0] = u0;
 	uvs[bufferSize + 1] = v0;
 	uvs[bufferSize + 2] = u0;
@@ -157,6 +164,8 @@ function draw2d(x, y, direction, sprite, color = 0xffffffff) {
 	uvs[bufferSize + 7] = v0;
 	x -= camera.x;
 	y -= camera.y;
+	// x = Math.round(x * 8) / 8;
+	// y = Math.round(y * 8) / 8;
 	let dx = uv.w / 2;
 	let dy = uv.h / 2;
 	if (direction != 1) dx *= -1;
@@ -234,6 +243,8 @@ function onFrame(t) {
 	// let cameraTarget = Math.round(knight.x + knight.d * 16);
 	let cameraTarget = knight.x + knight.d * 16;
 	camera.x = (1 - alpha) * camera.x + alpha * cameraTarget;
+	// camera.x += (1 - 2 * Math.random()) / 16;
+	// camera.y += (1 - 2 * Math.random()) / 16;
 	if (Math.abs(camera.x - cameraTarget) < 0.05) camera.x = cameraTarget;
 	switch (knightState) {
 		case "idle":
@@ -251,14 +262,15 @@ function onFrame(t) {
 	gl.depthFunc(gl.LEQUAL);
 	gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 	gl.clearDepth(1.0);
-	gl.clearColor(0.0, 0.0, 0.0, 1);
+	gl.clearColor(0, 0, 0, 1);
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
 	t /= 1000;
 	let x0 = Math.round(camera.x / 48) * 48;
 	for (let x = x0 - 128; x <= x0 + 176; x += 48)
 		draw2d(x, -26, 1, "floor");
-	// for (let x = x0 - 168; x <= x0 + 168; x += 8) for (let y = -6; y < 80; y += 8) draw2d(x, y, 1, "catwall");
+	for (let x = x0 - 168; x <= x0 + 168; x += 8) for (let y = -6; y < 80; y += 8)
+		draw2d(x, y, 1, "catwall", 0x7700aaff);
 	draw2d(knight.x, knight.y, knight.d, "knight/" + knightState);
 	drawBatch();
 
