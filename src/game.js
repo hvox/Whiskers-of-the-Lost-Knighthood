@@ -231,8 +231,7 @@ function onFrame(t) {
 	// let cameraTarget = Math.round(knight.x + knight.d * 16);
 	let cameraTarget = knight.x + knight.d * 16;
 	camera.x = (1 - alpha) * camera.x + alpha * cameraTarget;
-	if (Math.abs(camera.x - cameraTarget) < 0.1)
-		camera.x = cameraTarget;
+	if (Math.abs(camera.x - cameraTarget) < 0.05) camera.x = cameraTarget;
 	switch (knightState) {
 		case "idle":
 			knight.x = Math.round(knight.x + knight.d * 0.4);
