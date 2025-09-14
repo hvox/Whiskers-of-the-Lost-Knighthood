@@ -14,8 +14,10 @@ let fogShader = buildShaderProgram(FOG_VS, FOG_FS);
 let batchColor = 0xffffffff;
 let glIndicesBuffer = gl.createBuffer(); {
 	let indices = [];
+	// TODO: check for WEBGL_provoking_vertex and use FIRST_VERTEX_CONVENTION_WEBGL
+	// for performance boost according to MDN
 	for (let i = 0; i * 2 < MAX_BUFFER_SIZE; i += 4)
-		indices.push(...[i, i + 2, i + 1, i, i + 3, i + 2]);
+		indices.push(...[i + 3, i + 1, i, i + 1, i + 3, i + 2]);
 	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, glIndicesBuffer);
 	gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
 };
@@ -104,6 +106,7 @@ let sprites = {
 	"shield": { x: 144, y: 112, w: 16, h: 16 },
 	"floor": { x: 176, y: 96, w: 48, h: 32 },
 	"wall": { x: 224, y: 96, w: 96, h: 32 },
+	"catwall": { x: 12, y: 108, w: 8, h: 8 },
 };
 
 
@@ -144,7 +147,6 @@ function draw2d(x, y, direction, sprite, color = 0xffffffff) {
 	let u1 = u0 + uv.w / textureResolution.w;
 	let v1 = 1 - uv.y / textureResolution.h;
 	let v0 = v1 - uv.h / textureResolution.h;
-	if (direction != 1) [u0, u1] = [u1, u0];
 	uvs[bufferSize + 0] = u0;
 	uvs[bufferSize + 1] = v0;
 	uvs[bufferSize + 2] = u0;
@@ -157,6 +159,7 @@ function draw2d(x, y, direction, sprite, color = 0xffffffff) {
 	y -= camera.y;
 	let dx = uv.w / 2;
 	let dy = uv.h / 2;
+	if (direction != 1) dx *= -1;
 	vertices[bufferSize++] = x - dx;
 	vertices[bufferSize++] = y - dy;
 	vertices[bufferSize++] = x - dx;
@@ -242,7 +245,7 @@ function onFrame(t) {
 
 	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 	gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-	gl.enable(gl.CULL_FACE);
+	gl.disable(gl.CULL_FACE);
 	gl.enable(gl.DEPTH_TEST);
 	gl.enable(gl.BLEND);
 	gl.depthFunc(gl.LEQUAL);
@@ -255,6 +258,7 @@ function onFrame(t) {
 	let x0 = Math.round(camera.x / 48) * 48;
 	for (let x = x0 - 128; x <= x0 + 176; x += 48)
 		draw2d(x, -26, 1, "floor");
+	// for (let x = x0 - 168; x <= x0 + 168; x += 8) for (let y = -6; y < 80; y += 8) draw2d(x, y, 1, "catwall");
 	draw2d(knight.x, knight.y, knight.d, "knight/" + knightState);
 	drawBatch();
 

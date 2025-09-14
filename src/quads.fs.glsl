@@ -8,10 +8,13 @@ in vec2 tex;
 in vec4 tone;
 in vec2 inner_position;
 out vec4 color;
+flat in vec2 min_tex;
+flat in vec2 max_tex;
 
 void main() {
     vec2 texture_size = vec2(textureSize(image, 0));
-    vec2 pixel = tex * texture_size;
+    vec2 pixel = clamp(tex * texture_size, min_tex * texture_size + 0.5, max_tex * texture_size - 0.5);
+    // vec2 pixel = tex * texture_size;
     vec2 seam = floor(pixel + 0.5);
     pixel = seam + clamp((pixel - seam) / fwidth(pixel), -0.5, 0.5);
     // pixel = round(tex * texture_size + 0.5) - 0.5;
