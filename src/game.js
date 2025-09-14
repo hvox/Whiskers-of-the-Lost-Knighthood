@@ -227,7 +227,7 @@ function onFrame(t) {
 		knight.state = knightState;
 		knight.t = 0;
 	}
-	let alpha = 3.0 * dt;
+	let alpha = Math.min(0.9, 3.0 * dt);
 	// let cameraTarget = Math.round(knight.x + knight.d * 16);
 	let cameraTarget = knight.x + knight.d * 16;
 	camera.x = (1 - alpha) * camera.x + alpha * cameraTarget;
