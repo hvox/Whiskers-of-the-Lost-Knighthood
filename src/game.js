@@ -281,10 +281,10 @@ function onFrame(t) {
 let keys = {}
 
 function updateKeyStates(dt = 0) {
-	for (const [key, t] of Object.entries(keys)) {
-		if (t - dt <= 0) delete keys[key];
-		else keys[key] -= dt;
-	}
+	let keysUpdated = {};
+	for (const [key, t] of Object.entries(keys))
+		if (t > dt) keysUpdated[key] = t - dt;
+	keys = keysUpdated;
 }
 
 function onKeydown(key) {
